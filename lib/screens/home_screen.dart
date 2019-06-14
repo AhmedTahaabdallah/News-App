@@ -3,6 +3,8 @@ import '../shared_ui/navigation_drawer.dart';
 import './home_tabs/whats_new.dart';
 import './home_tabs/popular.dart';
 import './home_tabs/favourites.dart';
+//import '../api/posts_api.dart';
+//import '../models/author.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -18,7 +20,9 @@ enum PopOutMenu{
 
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
+      
   TabController _tabController;
+  //PostsApi postsApi = PostsApi();
 
   Widget _buildPopUpMenu(BuildContext context){
     return PopupMenuButton<PopOutMenu>(itemBuilder: (context) {
@@ -51,6 +55,7 @@ class _HomeScreenState extends State<HomeScreen>
   void initState() {
     super.initState();
     _tabController = TabController(initialIndex: 0, length: 3, vsync: this);
+    //postsApi.fetchWhatsNews();
   }
 
   @override
