@@ -27,28 +27,33 @@ class _WhatsNewState extends State<WhatsNew> {
     var connectivityResult = await (Connectivity().checkConnectivity());
     if (connectivityResult == ConnectivityResult.mobile ||
         connectivityResult == ConnectivityResult.wifi) {
-      _mainPage = SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            _drawHeader(
-                'assets/images/placeholder_bg.png',
-                'How Terriers & Royals Getecreshed Final',
-                'Lorem ipsum dolor sit amet, Royals Getecreshed Final'),
-            _drawTopStories(),
-            _drawRecentUpdate()
-          ],
-        ),
-      );
+          setState(() {
+            _mainPage = SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  _drawHeader(
+                      'assets/images/placeholder_bg.png',
+                      'How Terriers & Royals Getecreshed Final',
+                      'Lorem ipsum dolor sit amet, Royals Getecreshed Final'),
+                  _drawTopStories(),
+                  _drawRecentUpdate()
+                ],
+              ),
+            );            
+          });
+      
     } else {
-      _mainPage = Container(
-        child: Center(
-          child: Text(
-            'No Internet Connection!',
-            textAlign: TextAlign.center,
+      setState(() {
+       _mainPage = Container(
+          child: Center(
+            child: Text(
+              'No Internet Connection!',
+              textAlign: TextAlign.center,
+            ),
           ),
-        ),
-      );
+        ); 
+      });
     }
   }
 
@@ -407,8 +412,8 @@ class _WhatsNewState extends State<WhatsNew> {
 
   @override
   Widget build(BuildContext context) {
-    //return _mainPage;
-    return SingleChildScrollView(
+    return _mainPage;
+    /*return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -420,6 +425,6 @@ class _WhatsNewState extends State<WhatsNew> {
           _drawRecentUpdate()
         ],
       ),
-    );
+    );*/
   }
 }
