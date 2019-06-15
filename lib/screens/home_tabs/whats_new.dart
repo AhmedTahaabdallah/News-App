@@ -1,12 +1,14 @@
+import 'dart:math';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../api/posts_api.dart';
 //import 'dart:async';
 import '../../models/post.dart';
-import 'package:timeago/timeago.dart' as timeago;
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../widgets/adapativ_progress_indicator.dart';
 import 'package:connectivity/connectivity.dart';
+import '../../utillites/data_utillites.dart';
 
 class WhatsNew extends StatefulWidget {
   @override
@@ -17,130 +19,182 @@ class _WhatsNewState extends State<WhatsNew> {
   PostsApi postsApi = PostsApi();
   Widget _mainPage = AdapativProgressIndicator();
 
-  String _parseHumanDateTime(String dateTime) {
-    Duration timeAgo = DateTime.now().difference(DateTime.parse(dateTime));
-    DateTime theDiffrence = DateTime.now().subtract(timeAgo);
-    return timeago.format(theDiffrence);
-  }
-
   void _checkInternet() async {
     var connectivityResult = await (Connectivity().checkConnectivity());
     if (connectivityResult == ConnectivityResult.mobile ||
         connectivityResult == ConnectivityResult.wifi) {
-          setState(() {
-            _mainPage = SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  _drawHeader(
-                      'assets/images/placeholder_bg.png',
-                      'How Terriers & Royals Getecreshed Final',
-                      'Lorem ipsum dolor sit amet, Royals Getecreshed Final'),
-                  _drawTopStories(),
-                  _drawRecentUpdate()
-                ],
-              ),
-            );            
-          });
-      
+      setState(() {
+        _mainPage = SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              _drawHeader(
+                  'assets/images/placeholder_bg.png',
+                  'How Terriers & Royals Getecreshed Final',
+                  'Lorem ipsum dolor sit amet, Royals Getecreshed Final'),
+              _drawTopStories(),
+              _drawRecentUpdate()
+            ],
+          ),
+        );
+      });
     } else {
       setState(() {
-       _mainPage = Container(
+        _mainPage = Container(
           child: Center(
             child: Text(
               'No Internet Connection!',
               textAlign: TextAlign.center,
             ),
           ),
-        ); 
+        );
       });
     }
-  }
-
-  Widget _error(var error) {
-    return Container(
-      padding: EdgeInsets.all(16),
-      child: Center(
-          child: Text(
-        error.toString(),
-        textAlign: TextAlign.center,
-      )),
-    );
-  }
-
-  Widget _noData() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      child: Center(
-          child: Text(
-        'No Data Available!',
-        textAlign: TextAlign.center,
-      )),
-    );
-  }
-
-  Widget _connectionError() {
-    return Container(
-      padding: EdgeInsets.all(16),
-      child: Center(
-          child: Text(
-        'Connection Error!',
-        textAlign: TextAlign.center,
-      )),
-    );
   }
 
   Widget _drawHeader(String image, String title, String description) {
     TextStyle _hederTitle = TextStyle(
         color: Colors.white, fontSize: 21.0, fontWeight: FontWeight.bold);
     TextStyle _hederDescrption = TextStyle(color: Colors.white, fontSize: 18.0);
-    return Container(
-      width: MediaQuery.of(context).size.width,
-      height: MediaQuery.of(context).size.height * .25,
-      decoration: BoxDecoration(
-          image: DecorationImage(
-              image: ExactAssetImage(image), fit: BoxFit.cover)),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.only(left: 75.0, right: 75.0),
-              child: Text(
-                title,
-                style: _hederTitle,
-                textAlign: TextAlign.center,
-              ),
-            ),
-            SizedBox(
-              height: 8.0,
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 15.0, right: 15.0),
-              child: Text(
-                description,
-                style: _hederDescrption,
-                textAlign: TextAlign.center,
-              ),
-            )
-          ],
-        ),
-      ),
+
+    return FutureBuilder(
+      future: postsApi.fetchPostsByCategoriesId('1'),
+      builder: (context, snapShot) {
+        switch (snapShot.connectionState) {
+          case ConnectionState.waiting:
+            return AdapativProgressIndicator();
+            break;
+          case ConnectionState.active:
+            return AdapativProgressIndicator();
+            break;
+          case ConnectionState.none:
+            return connectionError();
+            break;
+          case ConnectionState.done:
+            if (snapShot.hasError) {
+              return error(snapShot.error);
+            } else {
+              if (snapShot.hasData) {
+                List<Post> posts = snapShot.data;
+                Random random = Random();
+                int randomIndex = random.nextInt(posts.length);
+                Post post = posts[randomIndex];
+                return Stack(
+                  children: <Widget>[
+                    Container(
+                  width: MediaQuery.of(context).size.width,
+                  height: MediaQuery.of(context).size.height * .25,
+                  /*decoration: BoxDecoration(
+                      image: DecorationImage(
+                          image: ExactAssetImage(image), fit: BoxFit.cover)),*/
+                  child: CachedNetworkImage(
+              imageUrl: post.featured_image,
+              placeholder: (context, url) => AdapativProgressIndicator(),
+              errorWidget: (context, url, error) => Container(
+                    decoration: BoxDecoration(
+                        color: Colors.blue.shade300,
+                        borderRadius: BorderRadius.circular(8)),
+                    child: Icon(
+                      Icons.error,
+                      color: Theme.of(context).primaryColor,
+                      size: 40,
+                    ),
+                  ),
+              fit: BoxFit.cover,
+            ),),
+                   Center(
+                       child: Column(
+                        //mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: <Widget>[
+                          SizedBox(
+                            height: 30.0,
+                          ),
+                          Padding(
+                            padding:
+                                const EdgeInsets.only(left: 75.0, right: 75.0),
+                            child: Text(
+                              post.title,
+                              style: _hederTitle,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          SizedBox(
+                            height: 8.0,
+                          ),
+                          Padding(
+                            padding:
+                                const EdgeInsets.only(left: 15.0, right: 15.0),
+                            child: Text(
+                              post.content.substring(0, 70) + '...',
+                              style: _hederDescrption,
+                              textAlign: TextAlign.center,
+                            ),
+                          )
+                        ],
+                  ),
+                     ),
+                
+                  ],
+                );
+                /*return Container(
+                  width: MediaQuery.of(context).size.width,
+                  height: MediaQuery.of(context).size.height * .25,
+                  decoration: BoxDecoration(
+                      image: DecorationImage(
+                          image: ExactAssetImage(image), fit: BoxFit.cover)),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        Padding(
+                          padding:
+                              const EdgeInsets.only(left: 75.0, right: 75.0),
+                          child: Text(
+                            post.title,
+                            style: _hederTitle,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        SizedBox(
+                          height: 8.0,
+                        ),
+                        Padding(
+                          padding:
+                              const EdgeInsets.only(left: 15.0, right: 15.0),
+                          child: Text(
+                            post.content,
+                            style: _hederDescrption,
+                            textAlign: TextAlign.center,
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                );*/
+              } else {
+                return noData();
+              }
+            }
+
+            break;
+        }
+      },
     );
   }
 
   List<Widget> _topStoriesItemList(List<Post> postss) {
     List<Widget> _wideget = List<Widget>();
     int lenthg = 3;
-    if(postss.length == 1){
+    if (postss.length == 1) {
       lenthg = 1;
-    } else if(postss.length == 2){
+    } else if (postss.length == 2) {
       lenthg = 2;
-    } else if(postss.length == 3){
+    } else if (postss.length == 3) {
       lenthg = 3;
-    } 
+    }
     for (int i = 1; i <= lenthg; i++) {
-      _wideget.add(_drawSingleRow(postss[i-1]));
+      _wideget.add(_drawSingleRow(postss[i - 1]));
       if (i < lenthg) {
         _wideget.add(_drawDivider());
       }
@@ -159,7 +213,7 @@ class _WhatsNewState extends State<WhatsNew> {
             padding: EdgeInsets.all(8.0),
             child: Card(
               child: FutureBuilder(
-                future: postsApi.fetchWhatsNews(),
+                future: postsApi.fetchPostsByCategoriesId('1'),
                 builder: (context, AsyncSnapshot snapshot) {
                   switch (snapshot.connectionState) {
                     case ConnectionState.waiting:
@@ -169,18 +223,18 @@ class _WhatsNewState extends State<WhatsNew> {
                       return AdapativProgressIndicator();
                       break;
                     case ConnectionState.none:
-                      return _connectionError();
+                      return connectionError();
                       break;
                     case ConnectionState.done:
                       if (snapshot.error != null) {
-                        return _error(snapshot.error);
+                        return error(snapshot.error);
                       } else {
                         if (snapshot.hasData) {
                           List<Post> posts = snapshot.data;
                           //if (posts.length >= 3) {
-                            return Column(
-                              children: _topStoriesItemList(posts),
-                            );
+                          return Column(
+                            children: _topStoriesItemList(posts),
+                          );
                           /*} else {
                             return _noData();
                           }*/
@@ -198,7 +252,7 @@ class _WhatsNewState extends State<WhatsNew> {
                             return _noData();
                           }*/
                         } else {
-                          return _noData();
+                          return noData();
                         }
                       }
 
@@ -245,7 +299,17 @@ class _WhatsNewState extends State<WhatsNew> {
             child: CachedNetworkImage(
               imageUrl: post.featured_image,
               placeholder: (context, url) => AdapativProgressIndicator(),
-              errorWidget: (context, url, error) => new Icon(Icons.error),
+              errorWidget: (context, url, error) => Container(
+                    decoration: BoxDecoration(
+                        color: Colors.blue.shade300,
+                        borderRadius: BorderRadius.circular(8)),
+                    child: Icon(
+                      Icons.error,
+                      color: Theme.of(context).primaryColor,
+                      size: 40,
+                    ),
+                  ),
+              fit: BoxFit.cover,
             ),
 
             /*Image.network(
@@ -258,11 +322,12 @@ class _WhatsNewState extends State<WhatsNew> {
           ),
           Expanded(
             child: Column(
-              //crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               //mainAxisAlignment: MainAxisAlignment.start,
               children: <Widget>[
                 Text(
                   post.title,
+                  textAlign: TextAlign.start,
                   maxLines: 2,
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
@@ -276,10 +341,12 @@ class _WhatsNewState extends State<WhatsNew> {
                         fit: FlexFit.tight,
                         flex: 4,
                         child: Text(post.autherName)),
-                        Flexible(
+                    Flexible(
                         fit: FlexFit.tight,
                         flex: 1,
-                        child: SizedBox(width: 5.0,)),
+                        child: SizedBox(
+                          width: 5.0,
+                        )),
                     Flexible(
                       fit: FlexFit.tight,
                       flex: 5,
@@ -295,12 +362,14 @@ class _WhatsNewState extends State<WhatsNew> {
                               color: Colors.grey,
                             ),
                           ),
-                          SizedBox(width: 5.0,),
+                          SizedBox(
+                            width: 5.0,
+                          ),
                           Flexible(
                             fit: FlexFit.tight,
                             flex: 4,
                             child: Text(
-                              _parseHumanDateTime(post.date_written),
+                              parseHumanDateTime(post.date_written),
                               style: TextStyle(color: Colors.grey),
                             ),
                           )
@@ -317,37 +386,66 @@ class _WhatsNewState extends State<WhatsNew> {
     );
   }
 
+  List<Widget> _recentUpdateItemList(List<Post> postss) {
+    List<Widget> _wideget = List<Widget>();
+    int lenthg = 2;
+    if (postss.length == 1) {
+      lenthg = 1;
+    } else if (postss.length == 2) {
+      lenthg = 2;
+    }
+    for (int i = 1; i <= lenthg; i++) {
+      if (i == 1) {
+        _wideget.add(_drawRecentUpdateCard(postss[i - 1], Colors.deepOrange));
+      } else {
+        _wideget.add(_drawRecentUpdateCard(postss[i - 1], Colors.teal));
+      }
+    }
+    _wideget.add(SizedBox(
+      height: 15,
+    ));
+    return _wideget;
+  }
+
   Widget _drawRecentUpdate() {
     return Container(
       color: Colors.grey.shade100,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          _drawSectionTitle('Recent Update'),
-          Column(
-            children: <Widget>[
-              _drawRecentUpdateCard(
-                  Colors.deepOrange,
-                  'assets/images/placeholder_bg.png',
-                  'Vettel is Ferrail Number One',
-                  '15 Min'),
-              _drawRecentUpdateCard(
-                  Colors.teal,
-                  'assets/images/placeholder_bg.png',
-                  'Vettel is Ferrail Number Two',
-                  '15 Min'),
-              SizedBox(
-                height: 15,
-              )
-            ],
-          ),
-        ],
+      child: FutureBuilder(
+        future: postsApi.fetchPostsByCategoriesId('2'),
+        builder: (context, AsyncSnapshot snapshot) {
+          switch (snapshot.connectionState) {
+            case ConnectionState.waiting:
+              return AdapativProgressIndicator();
+              break;
+            case ConnectionState.active:
+              return AdapativProgressIndicator();
+              break;
+            case ConnectionState.none:
+              return connectionError();
+              break;
+            case ConnectionState.done:
+              if (snapshot.hasError) {
+                return error(snapshot.error);
+              } else {
+                if (snapshot.hasData) {
+                  List<Post> posts = snapshot.data;
+                  //if (posts.length >= 3) {
+                  return Column(
+                    children: _recentUpdateItemList(posts),
+                  );
+                } else {
+                  return noData();
+                }
+              }
+
+              break;
+          }
+        },
       ),
     );
   }
 
-  Widget _drawRecentUpdateCard(
-      Color color, String image, String text, String time) {
+  Widget _drawRecentUpdateCard(Post posts, Color color) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Card(
@@ -359,9 +457,21 @@ class _WhatsNewState extends State<WhatsNew> {
               Container(
                 width: double.infinity,
                 height: MediaQuery.of(context).size.height * .25,
-                decoration: BoxDecoration(
-                    image: DecorationImage(
-                        image: ExactAssetImage(image), fit: BoxFit.cover)),
+                child: CachedNetworkImage(
+                  imageUrl: posts.featured_image,
+                  placeholder: (context, url) => AdapativProgressIndicator(),
+                  errorWidget: (context, url, error) => Container(
+                        decoration: BoxDecoration(
+                            color: Colors.blue.shade300,
+                            borderRadius: BorderRadius.circular(8)),
+                        child: Icon(
+                          Icons.error,
+                          color: Theme.of(context).primaryColor,
+                          size: 40,
+                        ),
+                      ),
+                  fit: BoxFit.cover,
+                ),
               ),
               Container(
                 padding:
@@ -370,13 +480,15 @@ class _WhatsNewState extends State<WhatsNew> {
                 decoration: BoxDecoration(
                     color: color, borderRadius: BorderRadius.circular(4)),
                 child: Text(
-                  'Sport',
+                  posts.categoryTitle,
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                       color: Colors.white, fontWeight: FontWeight.w500),
                 ),
               ),
               Text(
-                text,
+                posts.title,
+                textAlign: TextAlign.start,
                 style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.w500),
               ),
               SizedBox(
@@ -388,8 +500,11 @@ class _WhatsNewState extends State<WhatsNew> {
                     Icons.timer,
                     color: Colors.grey,
                   ),
+                  SizedBox(
+                    width: 5.0,
+                  ),
                   Text(
-                    time,
+                    parseHumanDateTime(posts.date_written),
                     style: TextStyle(
                         fontSize: 18.0,
                         fontWeight: FontWeight.w500,
